@@ -65,8 +65,28 @@ X_WZORZEC = {"Methane": 0.0, "Ethane": 0.0, "Carbon monoxide": 0.0, "Hydrogen": 
              "Nitrogen": 0.7369569305999624, "Carbon dioxide": 0.07109272145946961, "Water": 0.11848786909911602}
 WGS = {"Carbon monoxide": -1, "Water": -1, "Carbon dioxide": 1, "Hydrogen": 1}
 # K WGS w 700 K ze składu wylotu reaktora równowagowego w próbie szkicu narzędzi (17.10.2026, zasilanie
-# x_CO 0,50002, wynik z pięcioma miejscami po przecinku); K nie zależy od zasilania.
+# x_CO 0,50002, wynik z pięcioma miejscami po przecinku); K nie zależy od zasilania. Pilnuje zmian silnika.
 K_WGS_700, TOL_K = 9.3856, 1e-3
+
+
+def k_wgs_nist(T):
+    """Niezależny wzorzec: K = exp(-ΔG°/RT) z NIST WebBook (Chase 1998): równania Shomate'a w zakresach
+    obejmujących 700 K (CO 298–1300 K, H2O 500–1700 K, CO2 298–1200 K, H2 298–1000 K) i ΔfH° 298,15 K
+    (CO -110,53, H2O -241,826, CO2 -393,52 kJ/mol). Gaz doskonały, Δn = 0, więc K nie zależy od ciśnienia."""
+    shomate = {"Carbon monoxide": (25.56759, 6.096130, 4.054656, -2.671301, 0.131021, -118.0089, 227.3665, -110.5271, -110.53),
+               "Water": (30.09200, 6.832514, 6.793435, -2.534480, 0.082139, -250.8810, 223.3967, -241.8264, -241.826),
+               "Carbon dioxide": (24.99735, 55.18696, -33.69137, 7.948387, -0.136638, -403.6075, 228.2431, -393.5224, -393.52),
+               "Hydrogen": (33.066178, -11.363417, 11.432816, -2.772874, -0.158558, -9.980797, 172.707974, 0.0, 0.0)}
+    t, dh, ds = T / 1000, 0.0, 0.0
+    for c, n in WGS.items():
+        A, B, C, D, E, F, G, H, hf = shomate[c]
+        dh += n * (hf + A * t + B * t**2 / 2 + C * t**3 / 3 + D * t**4 / 4 - E / t + F - H)       # kJ/mol
+        ds += n * (A * math.log(t) + B * t + C * t**2 / 2 + D * t**3 / 3 - E / (2 * t**2) + G)  # J/(mol·K)
+    return math.exp(-(dh * 1000 - T * ds) / (8.314462618 * T))
+
+
+# 17.10.2026: NIST 9,4358, DWSIM (PR, 1 atm) 9,3856, różnica -0,53%; ±1% obejmuje rozrzut źródeł danych.
+K_WGS_700_NIST, TOL_K_NIST = k_wgs_nist(700.0), 1e-2
 
 
 def spalanie():
@@ -205,9 +225,10 @@ q_spal, dx_spal = spalanie()
 x_rown, x_gibbs = wgs("EquilibriumReactor"), wgs("GibbsReactor")
 k_rown = x_rown["Carbon dioxide"] * x_rown["Hydrogen"] / (x_rown["Carbon monoxide"] * x_rown["Water"])
 assert abs(k_rown / K_WGS_700 - 1) < TOL_K, (k_rown, x_rown)
+assert abs(k_rown / K_WGS_700_NIST - 1) < TOL_K_NIST, (k_rown, K_WGS_700_NIST)
 dx_wgs = max(abs(x_rown[c] - x_gibbs[c]) for c in WGS)
 assert dx_wgs < 1e-3, (x_rown, x_gibbs)
 print("smoke OK: %d narzędzi, B4 %.4f kWh (NIST 4,6508), zapis /data, odmowa zapisu poza /data" % (liczba, kwh))
-print("reakcje OK: spalanie λ = 1,6 Q = %.6f kW (Automation3 %.6f), max |Δx| %.1e; WGS 700 K K = %.4f, "
-      "x_CO %.6f, Gibbs - równowagowy max |Δx| %.1e" % (q_spal, Q_WZORZEC_KW, dx_spal, k_rown,
+print("reakcje OK: spalanie λ = 1,6 Q = %.6f kW (Automation3 %.6f), max |Δx| %.1e; WGS 700 K K = %.4f "
+      "(NIST %.4f), x_CO %.6f, Gibbs - równowagowy max |Δx| %.1e" % (q_spal, Q_WZORZEC_KW, dx_spal, k_rown, K_WGS_700_NIST,
                                                        x_rown["Carbon monoxide"], dx_wgs))
