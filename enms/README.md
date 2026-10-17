@@ -1,8 +1,31 @@
 # DWSIM MCP w infrastrukturze EnMS
 
-Fork `DanWBR/dwsim10` z warstwą wdrożeniową EnMS. Kod autora zostaje bez zmian; nasze pliki to `enms/`,
-`docker-compose.prod.yml`, `docker-compose.staging.yml`, `azure-pipelines.yml`, `.dockerignore`, `.env.example`,
-`CLAUDE.md` i wpis `.env` w `.gitignore`.
+Fork `DanWBR/dwsim10` z warstwą wdrożeniową EnMS. Nasze pliki to `enms/`, `docker-compose.prod.yml`,
+`docker-compose.staging.yml`, `azure-pipelines.yml`, `.dockerignore`, `.env.example`, `CLAUDE.md` i wpis `.env`
+w `.gitignore`. Kod autora zostaje bez zmian poza łatką reakcji (niżej).
+
+## Łatka: narzędzia reakcji w serwerze MCP
+
+Decyzja M. Trojnackiego 17.10.2026: reakcje przez MCP są potrzebne do AEE (spalanie, gaz poredukcyjny), autor ich
+jeszcze nie ma. Po wdrożeniu idzie do autora jako PR (opis: `enms/pr-reakcje.md`). Zmiany w kodzie autora:
+
+- nowy plik `tools/DWSIM.MCPServer/Tools/Reactions/ReactionTools.cs`: `dwsim_reaction_add_conversion`,
+  `dwsim_reaction_add_equilibrium`, `dwsim_reactionset_create`, `dwsim_reaction_list`, `dwsim_reactor_set_compounds`;
+- `tools/DWSIM.MCPServer/Program.cs`: 2 linie (`using DWSIM.MCPServer.Tools.Reactions;` i rejestracja
+  `ReactionTools`);
+- `tools/DWSIM.MCPServer/Rpc/JsonRpcDispatcher.cs`: 3 linie w tekście `Instructions` (krok reakcji w opisie
+  przepływu STEADY STATE).
+
+Test łatki jest w `enms/smoke.py` (spalanie i WGS, opis w sekcji Wdrożenie).
+
+Przy merge od autora:
+
+- jeśli autor doda narzędzia o tych samych nazwach, usuń łatkę w tym samym merge (plik `ReactionTools.cs`,
+  obie linie `Program.cs`, zdanie w `Instructions`, jeśli autor ma własne). `ToolRegistry` przerywa start serwera
+  przy dwóch narzędziach o tej samej nazwie, więc kontener z obiema wersjami nie wstanie (wychwyci to etap
+  `Test` pipeline'u);
+- konflikt w `Program.cs` albo `JsonRpcDispatcher.cs`: weź wersję autora i dopisz ponownie nasze linie;
+- po scaleniu PR u autora usuń łatkę i ten opis, a z `enms/smoke.py` zostaw test reakcji.
 
 ## Remote'y i gałęzie
 
@@ -38,7 +61,16 @@ Submoduł `external/ReoGrid` nie jest klonowany na serwerze; Dockerfile pobiera 
 
 Jak każda aplikacja (developer-guide `enms/deployment.md`): push `staging` → .122, push `main` → .125 po zatwierdzeniu.
 Etap `Test` buduje obraz i uruchamia `enms/smoke.py` (zdrowie z tokenem, odmowa bez tokenu, lista narzędzi,
-bilans wody z tablicami IAPWS względem NIST, zapis do `/data`).
+bilans wody z tablicami IAPWS względem NIST, zapis do `/data`, reakcje). Testy reakcji:
+
+- spalanie CH4/C2H6/CO/H2 przy λ = 1,6 w reaktorze konwersji: Q względem Automation3 z tolerancją 10⁻⁶
+  względnie, ciepła reakcji względem LHV NIST z tolerancją 0,1%, odmowy kontroli przed utworzeniem reakcji;
+- WGS w 700 K w reaktorze równowagowym: K z energii Gibbsa 9,3856 ±0,1%;
+- WGS w reaktorze Gibbsa: bez `dwsim_reactor_set_compounds` błąd „Element Matrix is not defined”, potem
+  zgodność z reaktorem równowagowym do 10⁻³ udziału molowego.
+
+Wynik liczbowy Gibbsa sprawdzamy tylko dla zasilania 0,5/0,5. Przy x_CO = 0,50002 solver w kontenerze zwraca
+bez błędu pełną konwersję (zgłoszenie do autora osobno).
 
 Pierwsze uruchomienie na serwerze (jednorazowo): klon do `/srv/dwsim-mcp` (staging: `/srv/staging/dwsim-mcp`).
 Katalog na .125 musi należeć do `marcint` (klon bez `sudo` albo `sudo chown -R marcint:marcint /srv/dwsim-mcp`):
