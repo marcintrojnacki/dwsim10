@@ -65,4 +65,15 @@ try:
     assert "error" in poza, poza
 finally:
     narzedzie("dwsim_flowsheet_close", flowsheet_id=fid)
+# opcjonalnie: pobranie zapisanego schematu przez kontener dwsim-mcp-pliki (trzeci argument: adres katalogu pliki/)
+if len(sys.argv) > 3:
+    with urllib.request.urlopen(urllib.request.Request(sys.argv[3].rstrip("/") + "/smoke.dwxmz", headers=NAGLOWKI),
+                                timeout=30) as odp:
+        assert odp.read(2) == b"PK", "pobrany plik nie jest archiwum dwxmz"
+    try:
+        urllib.request.urlopen(sys.argv[3].rstrip("/") + "/smoke.dwxmz", timeout=10)
+        raise AssertionError("pliki dostępne bez tokenu")
+    except urllib.error.HTTPError as e:
+        assert e.code in (401, 403), e.code
+    print("pobieranie pliku schematu: OK")
 print("smoke OK: %d narzędzi, B4 %.4f kWh (NIST 4,6508), zapis /data, odmowa zapisu poza /data" % (liczba, kwh))

@@ -1,0 +1,29 @@
+# Pobieranie plików schematów zapisanych przez serwer MCP w /data (wolumen tylko do odczytu).
+# Token ten sam co serwera MCP: Authorization: Bearer <token> albo X-MCP-Token. Szablon przetwarza envsubst obrazu nginx.
+map $http_authorization $dwsim_bearer { default 0; "Bearer ${DWSIM_MCP_TOKEN}" 1; }
+map $http_x_mcp_token   $dwsim_naglowek { default 0; "${DWSIM_MCP_TOKEN}" 1; }
+map "$dwsim_bearer:$dwsim_naglowek" $dwsim_odmowa { default 0; "0:0" 1; }
+
+server {
+    listen 8080;
+    server_tokens off;
+
+    location = /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location /pliki/ {
+        if ($dwsim_odmowa) { return 401; }
+        limit_except GET HEAD { deny all; }
+        alias /data/;
+        autoindex off;
+        disable_symlinks on;
+        default_type application/octet-stream;
+        add_header Content-Disposition "attachment" always;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location / { return 404; }
+}

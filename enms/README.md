@@ -54,6 +54,11 @@ logowania; każde żądanie wymaga tokenu serwera. Źródło wpisu: `enms/nginx-
 `/srv/nginx/nginx.conf` (blok `i.enms.pl`, przed „Webhooks”) 17.10.2026, kopia `nginx.conf.bak-dwsim-mcp-20261017_162435`.
 Po zmianie fragmentu: kopia, podmiana bloku, `docker exec nginx nginx -t`, `docker exec nginx nginx -s reload`.
 
+Pliki schematów: serwer MCP zapisuje je tylko do `/data` (`dwsim_flowsheet_save`), pobiera się je przez
+`https://i.enms.pl/dwsim-mcp/pliki/<plik>` z tym samym tokenem. Obsługuje to kontener `dwsim-mcp-pliki`
+(nginx bez roota, wolumen tylko do odczytu, bez listowania katalogu i dowiązań, tylko GET; konfiguracja `enms/pliki/`).
+`dwsim_flowsheet_get_xml` ucina wynik na 500 000 znakach, więc do pobierania schematu się nie nadaje.
+
 ## Klient
 
 ```sh

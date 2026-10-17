@@ -37,6 +37,44 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Pobieranie plików schematów z /data (serwer MCP nie ma takiego narzędzia). Ten sam token; z zewnątrz przez nginx
+  # https://i.enms.pl/dwsim-mcp/pliki/<plik>. nginx bez roota, wolumen tylko do odczytu, bez listowania katalogu.
+  dwsim-mcp-pliki:
+    image: nginxinc/nginx-unprivileged:1.29-alpine
+    container_name: staging-dwsim-mcp-pliki
+    restart: unless-stopped
+    env_file: .env            # DWSIM_MCP_TOKEN
+    read_only: true
+    volumes:
+      - dwsim_mcp_data:/data:ro
+      - ./enms/pliki/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./enms/pliki/00-wymagaj-tokenu.sh:/docker-entrypoint.d/00-wymagaj-tokenu.sh:ro
+    tmpfs:
+      - /tmp:size=16m
+      - /etc/nginx/conf.d:size=1m,uid=101,gid=101
+    networks:
+      - staging-proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   dwsim_mcp_data:
 
