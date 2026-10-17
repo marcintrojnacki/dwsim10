@@ -40,7 +40,9 @@ Jak każda aplikacja (developer-guide `enms/deployment.md`): push `staging` → 
 Etap `Test` buduje obraz i uruchamia `enms/smoke.py` (zdrowie z tokenem, odmowa bez tokenu, lista narzędzi,
 bilans wody z tablicami IAPWS względem NIST, zapis do `/data`).
 
-Pierwsze uruchomienie na serwerze (jednorazowo): klon do `/srv/dwsim-mcp` (staging: `/srv/staging/dwsim-mcp`),
+Pierwsze uruchomienie na serwerze (jednorazowo): klon do `/srv/dwsim-mcp` (staging: `/srv/staging/dwsim-mcp`).
+Katalog na .125 musi należeć do `marcint` (klon bez `sudo` albo `sudo chown -R marcint:marcint /srv/dwsim-mcp`):
+`deploy.sh` odszyfrowuje `.env` bez `sudo` i na katalogu roota kończy się błędem „env file not found”.
 pipeline `dwsim-mcp-deploy`. Tokeny są w `production.env.enc` i `staging.env.enc` (age, odbiorcy z
 developer-guide `scripts/age-recipients.txt`); `deploy.sh` odszyfrowuje je do `.env`. Odczyt tokenu na Macu:
 `age -d -i ~/.config/age/key.txt production.env.enc`. Port hosta 5911 (5900–5902 na .122 zajmuje VNC).
