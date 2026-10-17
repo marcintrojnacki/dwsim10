@@ -45,6 +45,13 @@ pipeline `dwsim-mcp-deploy`. Tokeny są w `production.env.enc` i `staging.env.en
 developer-guide `scripts/age-recipients.txt`); `deploy.sh` odszyfrowuje je do `.env`. Odczyt tokenu na Macu:
 `age -d -i ~/.config/age/key.txt production.env.enc`. Port hosta 5911 (5900–5902 na .122 zajmuje VNC).
 
+## Dostęp z sieci firmy
+
+`https://i.enms.pl/dwsim-mcp/mcp` (oraz `/sse`, `/health`): nginx na .125, tylko z 10.14/16 i 10.24/16, bez bramy
+logowania; każde żądanie wymaga tokenu serwera. Źródło wpisu: `enms/nginx-ienms.location.conf`, wstawiony do
+`/srv/nginx/nginx.conf` (blok `i.enms.pl`, przed „Webhooks”) 17.10.2026, kopia `nginx.conf.bak-dwsim-mcp-20261017_162435`.
+Po zmianie fragmentu: kopia, podmiana bloku, `docker exec nginx nginx -t`, `docker exec nginx nginx -s reload`.
+
 ## Klient
 
 ```sh
