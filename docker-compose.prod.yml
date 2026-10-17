@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     # Tylko loopback; aplikacje sięgają przez sieć `proxy` (http://dwsim-mcp:5901), z zewnątrz nginx.
     ports:
-      - "127.0.0.1:${PORT:-5901}:5901"
+      - "127.0.0.1:${PORT:-5911}:5901"
     env_file: .env            # DWSIM_MCP_TOKEN
     # Serwer nie ogranicza ścieżek zapisu: system plików tylko do odczytu, zapis wyłącznie do /data i /tmp.
     read_only: true

@@ -41,12 +41,14 @@ Etap `Test` buduje obraz i uruchamia `enms/smoke.py` (zdrowie z tokenem, odmowa 
 bilans wody z tablicami IAPWS względem NIST, zapis do `/data`).
 
 Pierwsze uruchomienie na serwerze (jednorazowo): klon do `/srv/dwsim-mcp` (staging: `/srv/staging/dwsim-mcp`),
-`.env` z tokenem (`chmod 600`) albo `production.env.enc`/`staging.env.enc` (age), pipeline `dwsim-mcp-deploy`.
+pipeline `dwsim-mcp-deploy`. Tokeny są w `production.env.enc` i `staging.env.enc` (age, odbiorcy z
+developer-guide `scripts/age-recipients.txt`); `deploy.sh` odszyfrowuje je do `.env`. Odczyt tokenu na Macu:
+`age -d -i ~/.config/age/key.txt production.env.enc`. Port hosta 5911 (5900–5902 na .122 zajmuje VNC).
 
 ## Klient
 
 ```sh
-curl -s -H "Authorization: Bearer $DWSIM_MCP_TOKEN" http://127.0.0.1:5901/health
+curl -s -H "Authorization: Bearer $DWSIM_MCP_TOKEN" http://127.0.0.1:5911/health   # na serwerze; z sieci proxy: http://dwsim-mcp:5901
 ```
 
 Wskazówki budowy schematów i pułapki narzędzi: repozytorium `~/aiprojects/dwsim-automation`.
