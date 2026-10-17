@@ -1,0 +1,45 @@
+# Staging (.122): serwer DWSIM MCP budowany ze źródeł tego repozytorium (enms/Dockerfile).
+#   docker compose -f docker-compose.staging.yml up -d --build --remove-orphans
+services:
+  dwsim-mcp:
+    build:
+      context: .
+      dockerfile: enms/Dockerfile
+    image: dwsim-mcp:staging
+    container_name: staging-dwsim-mcp
+    restart: unless-stopped
+    # Tylko loopback; aplikacje sięgają przez sieć `proxy` (http://staging-dwsim-mcp:5901), z zewnątrz nginx.
+    ports:
+      - "127.0.0.1:${PORT:-5901}:5901"
+    env_file: .env            # DWSIM_MCP_TOKEN
+    # Serwer nie ogranicza ścieżek zapisu: system plików tylko do odczytu, zapis wyłącznie do /data i /tmp.
+    read_only: true
+    volumes:
+      - dwsim_mcp_data:/data
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+      - /home/dwsim:size=64m,uid=10001,gid=10001,mode=0700
+    networks:
+      - staging-proxy
+    stop_grace_period: 30s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  dwsim_mcp_data:
+
+networks:
+  staging-proxy:
+    external: true

@@ -1,0 +1,10 @@
+.git
+.github
+**/bin
+**/obj
+docs
+helpsystem
+tests
+.env
+*.env
+*.env.enc

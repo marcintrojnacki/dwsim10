@@ -365,3 +365,6 @@ FodyWeavers.xsd
 engine/DWSIM.Thermodynamics.ReaktoroPropertyPackage/native/
 packaging/windows/MicrosoftEdgeWebview2Setup.exe
 packaging/windows/lite.exe
+
+# EnMS: sekrety wdrożenia
+.env

@@ -1,0 +1,84 @@
+# Azure Pipelines - auto deploy serwera DWSIM MCP
+#
+# Flow:
+#   push to 'staging' branch -> deploy to staging (.122)
+#   push to 'main' branch    -> deploy to production (.125) after approval
+#
+# Instrukcja: developer-guide/enms/deployment.md, opis wdrożenia: enms/README.md
+
+trigger:
+  branches:
+    include:
+      - main
+      - staging
+
+pool:
+  name: Default
+  demands:
+    - agent.name -equals enms-deploy-122
+
+variables:
+  # Nazwa katalogu na serwerze w /srv/, nie nazwa repo.
+  projectName: dwsim-mcp
+
+stages:
+
+# Bramka przed każdym wdrożeniem: obraz ze źródeł, uruchomiony jak na produkcji, przechodzi test dymny.
+- stage: Test
+  displayName: 'Obraz i test dymny'
+  jobs:
+  - job: Test
+    displayName: 'docker build + enms/smoke.py'
+    steps:
+    - checkout: self
+    - script: |
+        set -e
+        docker build -f enms/Dockerfile -t dwsim-mcp:ci-$(Build.BuildId) .
+      displayName: 'Budowa obrazu'
+    - script: |
+        set -e
+        TOKEN=$(openssl rand -hex 24)
+        docker run -d --name dwsim-mcp-ci-$(Build.BuildId) --read-only --tmpfs /tmp \
+          --tmpfs /home/dwsim:uid=10001,gid=10001 --tmpfs /data:uid=10001,gid=10001 \
+          --cap-drop ALL --security-opt no-new-privileges:true \
+          -e DWSIM_MCP_TOKEN="$TOKEN" -p 127.0.0.1::5901 dwsim-mcp:ci-$(Build.BuildId)
+        PORT=$(docker port dwsim-mcp-ci-$(Build.BuildId) 5901/tcp | head -1 | cut -d: -f2)
+        for i in $(seq 1 60); do curl -sf -H "Authorization: Bearer $TOKEN" http://127.0.0.1:$PORT/health && break; sleep 2; done
+        python3 enms/smoke.py http://127.0.0.1:$PORT "$TOKEN"
+      displayName: 'Test dymny'
+    - script: |
+        docker logs --tail 50 dwsim-mcp-ci-$(Build.BuildId) || true
+        docker rm -f dwsim-mcp-ci-$(Build.BuildId) || true
+        docker image rm dwsim-mcp:ci-$(Build.BuildId) || true
+      displayName: 'Sprzątanie'
+      condition: always()
+
+- stage: DeployStaging
+  displayName: 'Deploy to Staging'
+  dependsOn: Test
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/staging'))
+  jobs:
+  - job: DeployStaging
+    displayName: 'Deploy to staging (.122)'
+    steps:
+    - checkout: none
+    - script: |
+        /opt/deploy-scripts/deploy.sh "$(projectName)" staging staging
+      displayName: 'Deploy to staging'
+
+- stage: DeployProduction
+  displayName: 'Deploy to Production'
+  dependsOn: Test
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployProduction
+    displayName: 'Deploy to production (.125)'
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: none
+          - script: |
+              /opt/deploy-scripts/deploy.sh "$(projectName)" production main
+            displayName: 'Deploy to production'
