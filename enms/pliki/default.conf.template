@@ -1,5 +1,7 @@
 # Pobieranie plików schematów zapisanych przez serwer MCP w /data (wolumen tylko do odczytu).
 # Token ten sam co serwera MCP: Authorization: Bearer <token> albo X-MCP-Token. Szablon przetwarza envsubst obrazu nginx.
+# Token 64 znaki + „Bearer ” nie mieści się w domyślnym kubełku 64 B.
+map_hash_bucket_size 128;
 map $http_authorization $dwsim_bearer { default 0; "Bearer ${DWSIM_MCP_TOKEN}" 1; }
 map $http_x_mcp_token   $dwsim_naglowek { default 0; "${DWSIM_MCP_TOKEN}" 1; }
 map "$dwsim_bearer:$dwsim_naglowek" $dwsim_odmowa { default 0; "0:0" 1; }
