@@ -49,8 +49,9 @@ def moc_kw(fid, strumien):
                            .values()))["value"])
 
 
-# Masy molowe z bazy DWSIM [g/mol]. Skład w dwsim_stream_add_material to przepływy masowe składników w kg/s
-# i nadpisuje przepływ całkowity, więc mol/s zamieniamy na kg/s tymi samymi masami co silnik.
+# Masy molowe z bazy DWSIM [g/mol]. Skład w dwsim_stream_add_material bez przepływu całkowitego to przepływy masowe
+# składników w kg/s (od #108 autora; z przepływem to ułamki masowe), więc mol/s zamieniamy na kg/s tymi samymi masami
+# co silnik.
 M = {"Methane": 16.04246, "Ethane": 30.06904, "Carbon monoxide": 28.0101, "Hydrogen": 2.01588, "Oxygen": 31.9988,
      "Nitrogen": 28.0134, "Carbon dioxide": 44.0095, "Water": 18.01528}
 SPALANIE = {
