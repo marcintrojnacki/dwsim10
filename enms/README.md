@@ -7,7 +7,8 @@ w `.gitignore`. Kod autora zostaje bez zmian poza łatką reakcji (niżej).
 ## Łatka: narzędzia reakcji w serwerze MCP
 
 Decyzja M. Trojnackiego 17.10.2026: reakcje przez MCP są potrzebne do AEE (spalanie, gaz poredukcyjny), autor ich
-jeszcze nie ma. Po wdrożeniu idzie do autora jako PR (opis: `enms/pr-reakcje.md`). Zmiany w kodzie autora:
+jeszcze nie ma. Zgłoszona autorowi 19.10.2026 jako PR https://github.com/DanWBR/dwsim10/pull/110 (gałąź `mcp-reaction-tools`
+w forku `github`, na `upstream/master` z poprawkami #108 i #109; opis: `enms/pr-reakcje.md`). Zmiany w kodzie autora:
 
 - nowy plik `tools/DWSIM.MCPServer/Tools/Reactions/ReactionTools.cs`: `dwsim_reaction_add_conversion`,
   `dwsim_reaction_add_equilibrium`, `dwsim_reactionset_create`, `dwsim_reaction_list`, `dwsim_reactor_set_compounds`;

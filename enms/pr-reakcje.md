@@ -64,7 +64,6 @@ Fluent API), so the tools were checked end to end over HTTP against a container 
 ## Not in this PR
 
 - Kinetic and heterogeneous catalytic reactions (CSTR, PFR), and editing or deleting reactions.
-- Two observations we will report separately: `composition` in `dwsim_stream_add_material` and
-  `dwsim_stream_set_conditions` sets compound mass flows in kg/s and so overrides the total flow given in the
-  same call; and a Gibbs reactor case (water-gas shift, 700 K, feed x_CO 0.5000216) that converts fully without
-  an error in the Linux container while the same feed on macOS reaches equilibrium.
+- The two problems found while testing this branch were reported as #108 (stream composition applied as compound
+  mass flows) and #109 (Gibbs reactor returning full conversion for water-gas shift at 700 K on Linux). Both are
+  fixed on `master` (834f0bc, f68dfee), which this branch is based on.
